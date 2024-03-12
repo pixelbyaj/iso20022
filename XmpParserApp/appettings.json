@@ -1,0 +1,8 @@
+{
+  "Configuration": {
+    "BAH": {
+      "NodeName": "AppHdr",
+      "documentNodeName": "Document"
+    }
+  }
+}

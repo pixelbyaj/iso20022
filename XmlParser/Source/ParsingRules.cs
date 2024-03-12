@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlTypes;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ namespace XmlParser.Source
     public abstract class ParsingRules
     {
         const string NAMESPACE_PREFIX = "ns";
-        internal IList<MappingTable>? _mappingTables;
+        internal IList<MappingRules>? _mappingRules;
 
         public abstract void DeserializeRules();
 
@@ -26,25 +27,30 @@ namespace XmlParser.Source
             {
                 XmlNamespaceManager namespaceManager = GetNamespaces(xmlDocument);
 
-                if (xmlDocument != null && _mappingTables != null)
+                if (xmlDocument != null && _mappingRules != null)
                 {
-                    dataSet = GetDefinedTable();
-                    if (dataSet != null)
+                    foreach (MappingRules rule in _mappingRules)
                     {
-                        foreach (MappingTable row in _mappingTables)
+                        dataSet = GetDefinedTable(rule.Mappings);
+                        if (dataSet != null)
                         {
-                            DataTable? table = dataSet.Tables[row.NodeName];
-                            if (table != null)
+                            foreach (MappingTable row in rule.Mappings)
                             {
-                                DataRow dtRow = table.NewRow();
-                                foreach (MappingColumn col in row.Columns)
+                                DataTable? table = dataSet.Tables[row.NodeName];
+                                string tableXpath = string.Format("{0}{1}", "//", (GetXPath(row.XPath)));
+                                XmlNode? tableNode = xmlDocument.SelectSingleNode(tableXpath, namespaceManager);
+                                if (table != null && tableNode != null)
                                 {
-                                    // Select the XML node using the XPath expression and namespace manager
-                                    string xpath = string.Format("{0}{1}", "//", (GetXPath(col.XPath)));
-                                    XmlNode? selectedNode = xmlDocument.SelectSingleNode(xpath, namespaceManager);
-                                    dtRow[col.NodeName] = string.IsNullOrEmpty(selectedNode?.InnerText) ? DBNull.Value : selectedNode.InnerText;
+                                    DataRow dtRow = table.NewRow();
+                                    foreach (MappingColumn col in row.Columns)
+                                    {
+                                        // Select the XML node using the XPath expression and namespace manager
+                                        string xpath = string.Format("{0}{1}", "//", (GetXPath(col.XPath)));
+                                        XmlNode? selectedNode = tableNode.SelectSingleNode(xpath, namespaceManager);
+                                        dtRow[col.NodeName] = string.IsNullOrEmpty(selectedNode?.InnerText) ? DBNull.Value : selectedNode.InnerText;
+                                    }
+                                    table.Rows.Add(dtRow);
                                 }
-                                table.Rows.Add(dtRow);
                             }
                         }
                     }
@@ -52,13 +58,13 @@ namespace XmlParser.Source
             });
             return dataSet;
         }
-        private DataSet GetDefinedTable()
+        private static DataSet GetDefinedTable(IList<MappingTable> mappingTables)
         {
-            if (_mappingTables == null)
+            if (mappingTables == null)
                 return new();
 
             DataSet dataSet = new();
-            foreach (MappingTable row in _mappingTables)
+            foreach (MappingTable row in mappingTables)
             {
                 DataTable table = new()
                 {
@@ -84,16 +90,19 @@ namespace XmlParser.Source
             List<string> newXPath = new();
             for (int i = 0; i < xpathWithOR.Length; i++)
             {
-                string[] nodes = xpathWithOR[i].Split('/');
+                string[] nodes = xpathWithOR[i].TrimStart().TrimEnd().Split('/');
                 for (int j = 0; j < nodes.Length; j++)
                 {
+                    if (nodes[j].StartsWith('@'))
+                        continue;
                     nodes[j] = NAMESPACE_PREFIX + ":" + nodes[j];
                 }
-                newXPath.Add(string.Join("/", nodes).Replace("[", string.Format("{0}{1}:", "[", NAMESPACE_PREFIX)));
+                string new_xpath = string.Join("/", nodes).Replace("[", string.Format("{0}{1}:", "[", NAMESPACE_PREFIX));
+                newXPath.Add(new_xpath);
 
             }
 
-            return string.Join("|", newXPath);
+            return string.Join(" | ", newXPath);
         }
 
         private static XmlNamespaceManager GetNamespaces(XmlDocument xmlDoc)

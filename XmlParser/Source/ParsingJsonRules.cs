@@ -18,8 +18,8 @@ namespace XmlParser.Source
         {
 
             ArgumentNullException.ThrowIfNull(jsonFilePath, nameof(jsonFilePath));
-            string jsonRules = File.ReadAllText(jsonFilePath);
-            if (string.IsNullOrEmpty(jsonRules))
+            _jsonRules = File.ReadAllText(jsonFilePath);
+            if (string.IsNullOrEmpty(_jsonRules))
             {
                 throw new ArgumentNullException(nameof(jsonFilePath), "Empty JSON Rules File");
             }
@@ -28,7 +28,7 @@ namespace XmlParser.Source
 
         public override void DeserializeRules()
         {
-            _mappingTables = JsonConvert.DeserializeObject<List<MappingTable>>(_jsonRules);
+            _mappingRules = JsonConvert.DeserializeObject<List<MappingRules>>(_jsonRules);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -13,13 +14,15 @@ namespace XmlParser.Services
 {
     public class ParsingService : IParsingService
     {
-        private readonly string _rootNodeName;
+        private readonly string _documentRootNodeName;
+        private readonly string _bahRootNodeName;
         private readonly ParsingRules _parsingRules;
 
-        public ParsingService(ParsingRules parsingRules, string rootNodeName = "Document")
+        public ParsingService(IConfiguration configuration, ParsingRules parsingRules, string bahRootNodeName = "AppHdr", string documentRootNodeName = "Document")
         {
             ArgumentNullException.ThrowIfNull(typeof(ParsingRules));
-            _rootNodeName = rootNodeName;
+            _documentRootNodeName = documentRootNodeName;
+            _bahRootNodeName = bahRootNodeName;
             _parsingRules = parsingRules;
         }
 
@@ -30,7 +33,17 @@ namespace XmlParser.Services
             List<DataSet> dataSets = new();
             while (await reader.ReadAsync())
             {
-                if (reader.NodeType == XmlNodeType.Element && reader.Name == _rootNodeName)
+                if (reader.NodeType == XmlNodeType.Element && reader.Name == _bahRootNodeName)
+                {
+                    childDoc = new XmlDocument();
+                    childDoc.Load(reader.ReadSubtree());
+                    DataSet? data = await ApplyParsingRulesAsync(childDoc);
+                    if (data != null)
+                    {
+                        dataSets.Add(data);
+                    }
+                }
+                else if (reader.NodeType == XmlNodeType.EndElement && reader.Name == _documentRootNodeName)
                 {
                     childDoc = new XmlDocument();
                     childDoc.Load(reader.ReadSubtree());
