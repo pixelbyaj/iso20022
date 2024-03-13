@@ -9,27 +9,41 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using XmlParser.Models;
+using MXParser.Models;
 
-namespace XmlParser.Source
+namespace MXParser.Source
 {
     public abstract class ParsingRules
     {
+        #region const members
+        const string COLUMN_MESSAGE_ID = "MessageId";
         const string NAMESPACE_PREFIX = "ns";
+        const string NAMESPACE_APPHDR = "urn:iso:std:iso:20022:tech:xsd:head.001.001";
+        #endregion
+        
+        #region internal members
         internal IList<MappingRules>? _mappingRules;
+        #endregion
 
+        #region private members
+        private string _xmlNamespace = string.Empty;
+        #endregion
+
+        #region public methods
         public abstract void DeserializeRules();
+        #endregion
 
-        internal async Task<DataSet?> ParseXmlRulesAsync(XmlDocument xmlDocument)
+        #region internal method
+        internal async Task<DataSet?> ParseXmlRulesAsync(XmlDocument xmlDocument, Guid messageUniqueId)
         {
             DataSet? dataSet = new();
             await Task.Run(() =>
             {
-                XmlNamespaceManager namespaceManager = GetNamespaces(xmlDocument);
-
                 if (xmlDocument != null && _mappingRules != null)
                 {
-                    foreach (MappingRules rule in _mappingRules)
+                    XmlNamespaceManager namespaceManager = GetNamespaces(xmlDocument);
+                    var rules = _mappingRules.Where(c => _xmlNamespace.Contains(c.Namespace) || c.Namespace == NAMESPACE_APPHDR);
+                    foreach (MappingRules rule in rules)
                     {
                         dataSet = GetDefinedTable(rule.Mappings);
                         if (dataSet != null)
@@ -38,18 +52,22 @@ namespace XmlParser.Source
                             {
                                 DataTable? table = dataSet.Tables[row.NodeName];
                                 string tableXpath = string.Format("{0}{1}", "//", (GetXPath(row.XPath)));
-                                XmlNode? tableNode = xmlDocument.SelectSingleNode(tableXpath, namespaceManager);
-                                if (table != null && tableNode != null)
+                                XmlNodeList? tableNodes = xmlDocument.SelectNodes(tableXpath, namespaceManager);
+                                if (table != null && tableNodes != null)
                                 {
-                                    DataRow dtRow = table.NewRow();
-                                    foreach (MappingColumn col in row.Columns)
+                                    foreach (XmlNode tableNode in tableNodes)
                                     {
-                                        // Select the XML node using the XPath expression and namespace manager
-                                        string xpath = string.Format("{0}{1}", "//", (GetXPath(col.XPath)));
-                                        XmlNode? selectedNode = tableNode.SelectSingleNode(xpath, namespaceManager);
-                                        dtRow[col.NodeName] = string.IsNullOrEmpty(selectedNode?.InnerText) ? DBNull.Value : selectedNode.InnerText;
+                                        DataRow dtRow = table.NewRow();
+                                        dtRow[COLUMN_MESSAGE_ID] = messageUniqueId;
+                                        foreach (MappingColumn col in row.Columns)
+                                        {
+                                            // Select the XML node using the XPath expression and namespace manager
+                                            string xpath = string.Format("{0}{1}", "//", (GetXPath(col.XPath)));
+                                            XmlNode? selectedNode = tableNode.SelectSingleNode(xpath, namespaceManager);
+                                            dtRow[col.NodeName] = string.IsNullOrEmpty(selectedNode?.InnerText) ? DBNull.Value : selectedNode.InnerText;
+                                        }
+                                        table.Rows.Add(dtRow);
                                     }
-                                    table.Rows.Add(dtRow);
                                 }
                             }
                         }
@@ -58,6 +76,39 @@ namespace XmlParser.Source
             });
             return dataSet;
         }
+        #endregion
+
+        #region private and private static members
+        private XmlNamespaceManager GetNamespaces(XmlDocument xmlDoc)
+        {
+            XmlNamespaceManager namespaces = new(xmlDoc.NameTable);
+
+            // Select all namespace attributes in the document
+            XmlNode? namespaceAttributes = xmlDoc.SelectSingleNode("//*[namespace-uri() != '']", namespaces);
+            XmlNode? namespaceDocAttributes = xmlDoc.SelectSingleNode("//*[local-name()='Document']", namespaces);
+            XmlNode? namespaceAppHdrAttributes = xmlDoc.SelectSingleNode("//*[local-name()='AppHdr']", namespaces);
+
+            if (namespaceDocAttributes != null)
+            {
+                _xmlNamespace = namespaceDocAttributes.NamespaceURI;
+                namespaces.AddNamespace(NAMESPACE_PREFIX, _xmlNamespace);
+            }
+
+            if (namespaceAttributes != null)
+            {
+                namespaces.AddNamespace(NAMESPACE_PREFIX, namespaceAttributes.NamespaceURI);
+            }
+
+            if (namespaceAppHdrAttributes != null)
+            {
+                namespaces.AddNamespace(NAMESPACE_PREFIX, namespaceAppHdrAttributes.NamespaceURI);
+            }
+
+
+
+            return namespaces;
+        }
+
         private static DataSet GetDefinedTable(IList<MappingTable> mappingTables)
         {
             if (mappingTables == null)
@@ -70,6 +121,7 @@ namespace XmlParser.Source
                 {
                     TableName = row.NodeName
                 };
+                table.Columns.Add(COLUMN_MESSAGE_ID, typeof(Guid));
                 foreach (MappingColumn col in row.Columns.OrderBy(c => c.OrderNumber))
                 {
                     DataColumn dataColumn = new()
@@ -105,27 +157,7 @@ namespace XmlParser.Source
             return string.Join(" | ", newXPath);
         }
 
-        private static XmlNamespaceManager GetNamespaces(XmlDocument xmlDoc)
-        {
-            XmlNamespaceManager namespaces = new XmlNamespaceManager(xmlDoc.NameTable);
-
-            // Select all namespace attributes in the document
-            XmlNodeList? namespaceAttributes = xmlDoc.SelectNodes("//*[namespace-uri() != '']", namespaces);
-
-            if (namespaceAttributes == null) 
-                return namespaces;
-            
-            // Add each namespace to the dictionary
-            foreach (XmlNode attribute in namespaceAttributes)
-            {
-                string uri = attribute.NamespaceURI;
-
-                // Add the namespace to the dictionary
-                namespaces.AddNamespace(NAMESPACE_PREFIX, uri);
-            }
-
-            return namespaces;
-        }
+        
         private static Type GetDataType(string name)
         {
             switch (name.ToLowerInvariant())
@@ -146,6 +178,7 @@ namespace XmlParser.Source
             }
         }
 
+        #endregion
 
     }
 }

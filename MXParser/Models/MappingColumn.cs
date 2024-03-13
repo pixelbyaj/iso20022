@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace XmlParser.Models
+namespace MXParser.Models
 {
-    internal class MappingColumn
+    public class MappingColumn
     {
         public int OrderNumber { get; set; }
         public string NodeName { get; set; } = string.Empty;

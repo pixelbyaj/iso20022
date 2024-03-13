@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace XmlParser.Models
+namespace MXParser.Models
 {
-    internal class MappingTable
+    public class MappingTable
     {
         public string NodeName { get; set; } = string.Empty;
         public string XPath { get; set; } = string.Empty;

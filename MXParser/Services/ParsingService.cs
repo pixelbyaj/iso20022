@@ -7,47 +7,46 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
-using XmlParser.Models;
-using XmlParser.Source;
+using MXParser.Models;
+using MXParser.Source;
 
-namespace XmlParser.Services
+namespace MXParser.Services
 {
-    public class ParsingService : IParsingService
+    sealed public class ParsingService : IParsingService
     {
+        #region private members
         private readonly string _documentRootNodeName;
-        private readonly string _bahRootNodeName;
         private readonly ParsingRules _parsingRules;
+        #endregion
 
-        public ParsingService(IConfiguration configuration, ParsingRules parsingRules, string bahRootNodeName = "AppHdr", string documentRootNodeName = "Document")
+        #region ctor
+        public ParsingService(ParsingRules parsingRules, string documentRootNodeName = "Document")
         {
             ArgumentNullException.ThrowIfNull(typeof(ParsingRules));
             _documentRootNodeName = documentRootNodeName;
-            _bahRootNodeName = bahRootNodeName;
             _parsingRules = parsingRules;
         }
+        #endregion
 
+        #region public methods
+        /// <summary>
+        /// Get list of dataset of a single parsed XML
+        /// </summary>
+        /// <param name="streamReader"></param>
+        /// <returns></returns>
         public async Task<IList<DataSet>> ParseXmlAsync(StreamReader streamReader)
         {
             using XmlReader reader = XmlReader.Create(streamReader, new XmlReaderSettings { Async = true, ConformanceLevel = ConformanceLevel.Auto });
             XmlDocument childDoc = childDoc = new();
             List<DataSet> dataSets = new();
+            Guid messageUniqueId = Guid.NewGuid();
             while (await reader.ReadAsync())
             {
-                if (reader.NodeType == XmlNodeType.Element && reader.Name == _bahRootNodeName)
+               if (reader.NodeType == XmlNodeType.EndElement && reader.Name == _documentRootNodeName)
                 {
                     childDoc = new XmlDocument();
                     childDoc.Load(reader.ReadSubtree());
-                    DataSet? data = await ApplyParsingRulesAsync(childDoc);
-                    if (data != null)
-                    {
-                        dataSets.Add(data);
-                    }
-                }
-                else if (reader.NodeType == XmlNodeType.EndElement && reader.Name == _documentRootNodeName)
-                {
-                    childDoc = new XmlDocument();
-                    childDoc.Load(reader.ReadSubtree());
-                    DataSet? data = await ApplyParsingRulesAsync(childDoc);
+                    DataSet? data = await ApplyParsingRulesAsync(childDoc, messageUniqueId);
                     if (data != null)
                     {
                         dataSets.Add(data);
@@ -56,22 +55,24 @@ namespace XmlParser.Services
             }
             return dataSets;
         }
-        public async Task ParseXmlAsync(StreamReader streamReader, Func<DataSet, Task> callback)
+       
+        public async Task ParseXmlAsync(StreamReader streamReader, Func<DataSet,Guid, Guid, Task> callback)
         {
             using XmlReader reader = XmlReader.Create(streamReader, new XmlReaderSettings { Async = true, ConformanceLevel = ConformanceLevel.Auto });
             XmlDocument childDoc = childDoc = new();
             List<DataSet> dataSets = new();
+            Guid messageUniqueId = Guid.NewGuid();
             while (await reader.ReadAsync())
             {
-                if (reader.NodeType == XmlNodeType.Element && reader.Name == _rootNodeName)
+                if (reader.NodeType == XmlNodeType.Element && reader.Name == _documentRootNodeName)
                 {
                     childDoc = new XmlDocument();
                     childDoc.Load(reader.ReadSubtree());
-                    DataSet? data = await ApplyParsingRulesAsync(childDoc);
+                    DataSet? data = await ApplyParsingRulesAsync(childDoc, messageUniqueId);
                     if (data != null)
                     {
                         if(callback != null)
-                        await callback(data);
+                        await callback(data, Guid.NewGuid(), messageUniqueId);
                     }
                 }
             }
@@ -92,7 +93,7 @@ namespace XmlParser.Services
             return await ParseXmlAsync(reader);
         }
 
-        public async Task ParseXmlAsync(string filePath, Func<DataSet, Task> callback)
+        public async Task ParseXmlAsync(string filePath, Func<DataSet,Guid, Guid, Task> callback)
         {
             ArgumentNullException.ThrowIfNull(typeof(string), filePath);
 
@@ -106,10 +107,14 @@ namespace XmlParser.Services
             ArgumentNullException.ThrowIfNull(typeof(StreamReader), filePath);
             await ParseXmlAsync(reader, callback);
         }
+        #endregion
 
-        private async Task<DataSet?> ApplyParsingRulesAsync(XmlDocument xmlDocument)
+        #region private static methods
+        private async Task<DataSet?> ApplyParsingRulesAsync(XmlDocument xmlDocument, Guid messageUniqueId)
         {
-            return await _parsingRules.ParseXmlRulesAsync(xmlDocument);
+            return await _parsingRules.ParseXmlRulesAsync(xmlDocument, messageUniqueId);
         }
+        #endregion
+
     }
 }

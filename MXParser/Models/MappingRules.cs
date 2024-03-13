@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace XmlParser.Models
+namespace MXParser.Models
 {
-    internal class MappingRules
+    public class MappingRules
     {
         public string Namespace { get; set; }
         public List<MappingTable> Mappings { get; set; }

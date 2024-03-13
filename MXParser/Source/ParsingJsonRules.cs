@@ -7,13 +7,13 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using XmlParser.Models;
+using MXParser.Models;
 
-namespace XmlParser.Source
+namespace MXParser.Source
 {
-    public class ParsingJsonRules : ParsingRules
+    sealed public class ParsingJsonRules : ParsingRules
     {
-        private string _jsonRules = string.Empty;
+        private readonly string _jsonRules = string.Empty;
         public ParsingJsonRules(string jsonFilePath)
         {
 
