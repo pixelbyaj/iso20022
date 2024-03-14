@@ -2,10 +2,10 @@
 
 MXParser is the dotnet library which help to parse MX (ISO 200022) messages in the fastes way possible. It will parse the ISO 20022 message with the predefined rule sets.
 
-## Parsing score
-The library can parse the given 60.6MB xml data file in 00:00:17.39 seconds.
+## Parsing Score
+The library can parse the given 60.6MB xml data file in 00:00:19 seconds with 4 Cores 8 Logical Processor with 16 MB of RAM.
 
-## Install package
+## Install Package
 
 1. Install the `MXParser` NuGet package.
   * .NET CLI
