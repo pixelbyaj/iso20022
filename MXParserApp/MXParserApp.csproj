@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MXParser\MXParser.csproj" />
+    <PackageReference Include="MXParser" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
