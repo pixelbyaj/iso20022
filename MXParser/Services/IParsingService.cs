@@ -5,10 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
-using MXParser.Models;
-using MXParser.Source;
 
-namespace MXParser.Services
+namespace MXParser
 {
     public interface IParsingService
     {

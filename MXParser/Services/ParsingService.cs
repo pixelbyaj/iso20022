@@ -1,16 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Data;
 using System.Xml;
-using MXParser.Models;
-using MXParser.Source;
 
-namespace MXParser.Services
+namespace MXParser
 {
     sealed public class ParsingService : IParsingService
     {

@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using MXParser.Models;
 
-namespace MXParser.Source
+namespace MXParser
 {
     public abstract class ParsingRules
     {
@@ -20,9 +19,24 @@ namespace MXParser.Source
         const string NAMESPACE_PREFIX = "ns";
         const string NAMESPACE_APPHDR = "urn:iso:std:iso:20022:tech:xsd:head.001.001";
         #endregion
-        
-        #region internal members
-        internal IList<MappingRules>? _mappingRules;
+
+        #region private members
+        private IList<MappingRules>? _mappingRules;
+        #endregion
+
+        #region public property
+        public IList<MappingRules>? MapParsingRules
+        {
+            get
+            {
+                return _mappingRules;
+            } 
+
+            protected set
+            {
+                _mappingRules = value;
+            }
+        }
         #endregion
 
         #region private members
@@ -157,7 +171,7 @@ namespace MXParser.Source
             return string.Join(" | ", newXPath);
         }
 
-        
+
         private static Type GetDataType(string name)
         {
             switch (name.ToLowerInvariant())

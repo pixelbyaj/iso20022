@@ -1,17 +1,16 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Data;
 using System.Diagnostics;
-using MXParser.Services;
-using MXParser.Source;
+using MXParser;
 
 internal class Program
 {
     private static async Task Main(string[] args)
     {
-        Stopwatch stopwatch = new Stopwatch();
+        Stopwatch stopwatch = new();
         stopwatch.Start();
-        IParsingService parsingService = new ParsingService(new ParsingJsonRules(@"C:\source\data\camt.053_rules.json"), "Document");
-        await parsingService.ParseXmlAsync("C:\\source\\data\\camt.053_test.xml", (DataSet ds, Guid messageUniqueId, Guid uniquiId) =>
+        IParsingService parsingService = new ParsingService(new ParsingJsonRules(@"C:\source\git\MXParser\MXParserApp\data\parsing_rules.json"), "Document");
+        await parsingService.ParseXmlAsync(@"C:\source\git\MXParser\MXParserApp\data\camt.053.xml", (DataSet ds, Guid messageUniqueId, Guid uniquiId) =>
         {
             Task task = Task.Run(() =>
             {
@@ -30,9 +29,6 @@ internal class Program
         // Print the elapsed time
         Console.WriteLine("Elapsed Time: " + elapsedTime);
         Console.Read();
-        //var ds = await parsingService.ParseXmlAsync("C:\\source\\data\\camt.053_test.xml");
-        //Console.WriteLine(ds.Count);
-        //ds = null;
     }
 
     static void ExportDataTableToCsv(DataTable dataTable, string filePath)

@@ -7,9 +7,8 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using MXParser.Models;
 
-namespace MXParser.Source
+namespace MXParser
 {
     sealed public class ParsingJsonRules : ParsingRules
     {
@@ -28,7 +27,7 @@ namespace MXParser.Source
 
         public override void DeserializeRules()
         {
-            _mappingRules = JsonConvert.DeserializeObject<List<MappingRules>>(_jsonRules);
+            MapParsingRules = JsonConvert.DeserializeObject<List<MappingRules>>(_jsonRules);
         }
     }
 }

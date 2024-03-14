@@ -4,7 +4,23 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>MX (ISO 20022) Parser</Title>
+    <Authors>Abhishek Joshi</Authors>
+    <Description>MXParser is the dotnet library which help to parse MX (ISO 200022) messages in the fastes way possible. It will parse the ISO 20022 message with the predefined rule sets.</Description>
+    <Copyright>Abhishek Joshi</Copyright>
+    <RepositoryUrl>https://github.com/pixelbyaj/mxparser</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>iso20022;mx;payments;sepa;target</PackageTags>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
