@@ -1,7 +1,6 @@
 # MX (ISO 20022) Message Parser
 
-[![NuGet Version](https://img.shields.io/nuget/v/mxparser)
-](https://www.nuget.org/packages/mxparser/)
+[![NuGet Version](https://img.shields.io/nuget/v/mxparser)](https://www.nuget.org/packages/mxparser/)
 ![NuGet Downloads](https://img.shields.io/nuget/dt/mxparser)
 
 
