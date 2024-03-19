@@ -2,8 +2,8 @@
 
 [![NuGet Version](https://img.shields.io/nuget/v/mxparser)
 ](https://www.nuget.org/packages/mxparser/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/mxparser)
-]
+![NuGet Downloads](https://img.shields.io/nuget/dt/mxparser)
+
 
 MXParser is the dotnet library which help to parse MX (ISO 200022) messages in the fastes way possible. It will parse the ISO 20022 message with the predefined rule sets.
 
