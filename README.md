@@ -142,4 +142,4 @@ public class ParsingDatabaseRules : ParsingRules
 
 [camt.053.xml](https://github.com/pixelbyaj/data/raw/main/MParser/camt.053.xml)
 
-[parsing_rules.xml](https://github.com/pixelbyaj/data/raw/main/MParser/parsing_rules.json)
+[parsing_rules.json](https://github.com/pixelbyaj/data/raw/main/MParser/parsing_rules.json)
