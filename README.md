@@ -1,32 +1,37 @@
-# MX (ISO 20022) Message Parser
+# ISO 20022 Library
+[![NuGet Version](https://img.shields.io/nuget/v/ISO20022.Net)](https://www.nuget.org/packages/ISO20022.Net/)
+![NuGet Downloads](https://img.shields.io/nuget/dt/ISO20022.Net)
 
-[![NuGet Version](https://img.shields.io/nuget/v/mxparser)](https://www.nuget.org/packages/mxparser/)
-![NuGet Downloads](https://img.shields.io/nuget/dt/mxparser)
+ISO20022 is the dotnet library which help to parse ISO 200022 messages in the fastes way possible with the predefined rule sets. It also helps to create ISO 20022 Messages as well as convert all ISO20022 XSD to normal JSON files.
 
+**NOTE: MXParser has been deprecated. Please switch to ISO20022**
 
-MXParser is the dotnet library which help to parse MX (ISO 200022) messages in the fastes way possible. It will parse the ISO 20022 message with the predefined rule sets.
+## Features
+* Parse the ISO 20022 XML Message with pre-defined rules.
+  * Rules can be in JSON structure or Database structured.
+* Convert ISO20022 XSD to [ngx-iso-form](https://www.npmjs.com/package/ngx-iso-form) compaitible JSON.
+  * This help to draw user interface using angular.
+* Convert ngx-iso-form output JSON to ISO 20022 Message.
 
-## Parsing Score
-The library can parse the given 60.6MB xml data file in 00:00:19 seconds with 4 Cores 8 Logical Processor with 16 MB of RAM.
-
-## Install Package
-
-1. Install the `MXParser` NuGet package.
+## Install the `ISO20022` NuGet package.
   * .NET CLI
   ```cs
-    dotnet add package MXParser
+    dotnet add package ISO20022.Net
   ```
   * Package Manager
   ```cs
-  Install-Package MXParser
+  Install-Package ISO20022.Net
   ```
 
-  ## Usage Example
+## Features in details:
 
-  ```C#
+### Parsing the ISO 20022 Messages
+
+
+```C#
 using System.Data;
 using System.Diagnostics;
-using MXParser;
+using ISO20022;
 
 public class Program
 {
@@ -92,8 +97,10 @@ public class Program
 
 }
 ```
+**NOTE
+The library can parse the given 60.6MB xml data file in 00:00:19 seconds with 4 Cores 8 Logical Processor with 16 MB of RAM.**
 
-## Parsing Rules
+### Parsing Rules
 Please follow the Parsing Rules example given in the data directory of the repository.
 Mapping Rules should follow below model class structure
 
@@ -123,7 +130,7 @@ public class MappingColumn
     public int totalDigits { get; set; }
 }
 ```
-## Override the Parsing Rules
+### Override the Parsing Rules
 The given example is in json file. Suppose you want to store Parsing rules in Database. Now you need to override the ParsingRules class method DeserializeRules.
 
 For Example:
@@ -138,8 +145,259 @@ public class ParsingDatabaseRules : ParsingRules
 }
 ```
 
-## Sample Files
+### Sample Files
 
 [camt.053.xml](https://github.com/pixelbyaj/data/raw/main/MParser/camt.053.xml)
 
-[parsing_rules.json](https://github.com/pixelbyaj/data/raw/main/MParser/parsing_rules.json)
+[parsing_rules.xml](https://github.com/pixelbyaj/data/raw/main/MParser/parsing_rules.json)
+
+## Convert ISO 20022 XSD to JSON
+
+```C#
+using ISO20022;
+
+var fileInfo = new FileInfo(fileName);
+if (File.Exists(fileName) && fileInfo.Extension.Equals(".xsd"))
+{
+    XsdToJson xsdLib = new(fileName);
+    xsdLib.Convert();
+    File.AppendAllText(fileInfo.FullName.Replace(".xsd", ".json"), xsdLib.SchemaJson);
+}
+```
+
+### Model of JSON
+```c#
+public class XsdSchema
+{
+    public required string Namespace { get; set; }
+    public required SchemaElement SchemaElement { get; set; }
+}
+
+public class SchemaElement
+{
+    public string? Id { get; set; }
+    public string? Name { get; set; }
+    public string? DataType { get; set; }
+    public string? MinOccurs { get; set; }
+    public string? MaxOccurs { get; set; }
+    public string? MinLength { get; set; }
+    public string? MaxLength { get; set; }
+    public string? Pattern { get; set; }
+    public string? FractionDigits { get; set; }
+    public string? TotalDigits { get; set; }
+    public string? MinInclusive { get; set; }
+    public string? MaxInclusive { get; set; }
+    public string[]? Values { get; set; }
+    public bool IsCurrency { get; set; }
+    public string? XPath { get; set; }
+    public List<SchemaElement> Elements { get; set; }
+}
+```
+### Example
+```json
+{
+    "namespace": "urn:iso:std:iso:20022:tech:xsd:camt.053.001.10",
+    "schemaElement": {
+        "id": "Document",
+        "name": "Document",
+        "dataType": null,
+        "minOccurs": "1",
+        "maxOccurs": null,
+        "minLength": null,
+        "maxLength": null,
+        "pattern": null,
+        "fractionDigits": null,
+        "totalDigits": null,
+        "minInclusive": null,
+        "maxInclusive": null,
+        "values": null,
+        "isCurrency": false,
+        "xpath": "Document",
+        "elements":[
+          ...
+        ]
+    }
+}
+```
+### Notes
+  * Throw JsonException in the case where it found deep nested node structure.
+  * CurrentDepth (64) is equal to or larger than the maximum allowed depth of (64)
+
+## Convert JSON to ISO 20022 Message 
+
+**Note: JSON here is the output of ngx-iso-form angular component**
+
+### Example
+
+```c#
+
+using ISO20022;
+string targetNamespace = "urn:iso:std:iso:20022:tech:xsd:camt.053.001.10";
+string jsonData = File.ReadAllText(@jsonPath);
+string xsdContent = File.ReadAllText(@xsdFilePath);
+XElement xml = MxMessage.Create(jsonData, targetNamespace) ?? throw new Exception("Conversion failed");
+if (MxMessage.ValidateMXMessage(xsdContent, xml.ToString(), out string validationMessage))
+{
+    if (string.IsNullOrEmpty(validationMessage))
+    {
+        Console.WriteLine(xml?.ToString());
+    }
+    else
+    {
+       Console.Error.WriteLine(validationMessage);
+    }
+}
+```
+JSON Example
+
+  ```json
+  {
+    "Document": {
+        "Document_BkToCstmrStmt": {
+            "Document_BkToCstmrStmt_GrpHdr": {
+                "Document_BkToCstmrStmt_GrpHdr_MsgId": "235549650",
+                "Document_BkToCstmrStmt_GrpHdr_CreDtTm": "2023-10-05T14:43:51.979",
+                "Document_BkToCstmrStmt_GrpHdr_MsgRcpt": {
+                    "Document_BkToCstmrStmt_GrpHdr_MsgRcpt_Nm": "Test Client Ltd.",
+                    "Document_BkToCstmrStmt_GrpHdr_MsgRcpt_Id": {
+                        "Document_BkToCstmrStmt_GrpHdr_MsgRcpt_Id_OrgId": {
+                            "Document_BkToCstmrStmt_GrpHdr_MsgRcpt_Id_OrgId_Othr": [
+                                {
+                                    "Document_BkToCstmrStmt_GrpHdr_MsgRcpt_Id_OrgId_Othr_Id": "test001"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "Document_BkToCstmrStmt_GrpHdr_AddtlInf": "AddTInf"
+            },
+            "Document_BkToCstmrStmt_Stmt": [
+                {
+                    "Document_BkToCstmrStmt_Stmt_Id": "258158850",
+                    "Document_BkToCstmrStmt_Stmt_ElctrncSeqNb": "1",
+                    "Document_BkToCstmrStmt_Stmt_LglSeqNb": "1",
+                    "Document_BkToCstmrStmt_Stmt_CreDtTm": "2023-10-05T14:43:52.098",
+                    "Document_BkToCstmrStmt_Stmt_FrToDt": {
+                        "Document_BkToCstmrStmt_Stmt_FrToDt_FrDtTm": "2023-09-30T20:00:00.000",
+                        "Document_BkToCstmrStmt_Stmt_FrToDt_ToDtTm": "2023-10-01T19:59:59.000"
+                    },
+                    "Document_BkToCstmrStmt_Stmt_Acct": {
+                        "Document_BkToCstmrStmt_Stmt_Acct_Tp": {
+                            "Document_BkToCstmrStmt_Stmt_Acct_Tp_Prtry": "IBDA_DDA"
+                        },
+                        "Document_BkToCstmrStmt_Stmt_Acct_Ccy": "USD",
+                        "Document_BkToCstmrStmt_Stmt_Acct_Nm": "Sample Name 123",
+                        "Document_BkToCstmrStmt_Stmt_Acct_Svcr": {
+                            "Document_BkToCstmrStmt_Stmt_Acct_Svcr_FinInstnId": {
+                                "Document_BkToCstmrStmt_Stmt_Acct_Svcr_FinInstnId_BICFI": "GSCRUS30",
+                                "Document_BkToCstmrStmt_Stmt_Acct_Svcr_FinInstnId_Nm": "Goldman Sachs Bank"
+                            }
+                        }
+                    },
+                    "Document_BkToCstmrStmt_Stmt_Bal": [
+                        {
+                            "Document_BkToCstmrStmt_Stmt_Bal_Tp": {
+                                "Document_BkToCstmrStmt_Stmt_Bal_Tp_CdOrPrtry": {
+                                    "Document_BkToCstmrStmt_Stmt_Bal_Tp_CdOrPrtry_Cd": "OPBD"
+                                }
+                            },
+                            "Document_BkToCstmrStmt_Stmt_Bal_Amt": {
+                                "Document_BkToCstmrStmt_Stmt_Bal_Amt_Ccy": "USD",
+                                "Document_BkToCstmrStmt_Stmt_Bal_Amt_Amt": "843686.20"
+                            },
+                            "Document_BkToCstmrStmt_Stmt_Bal_CdtDbtInd": "DBIT",
+                            "Document_BkToCstmrStmt_Stmt_Bal_Dt": {
+                                "Document_BkToCstmrStmt_Stmt_Bal_Dt_DtTm": "2023-09-30T20:00:00.000"
+                            }
+                        },
+                        {
+                            "Document_BkToCstmrStmt_Stmt_Bal_Tp": {
+                                "Document_BkToCstmrStmt_Stmt_Bal_Tp_CdOrPrtry": {
+                                    "Document_BkToCstmrStmt_Stmt_Bal_Tp_CdOrPrtry_Cd": "CLAV"
+                                }
+                            },
+                            "Document_BkToCstmrStmt_Stmt_Bal_Amt": {
+                                "Document_BkToCstmrStmt_Stmt_Bal_Amt_Ccy": "USD",
+                                "Document_BkToCstmrStmt_Stmt_Bal_Amt_Amt": "334432401.27"
+                            },
+                            "Document_BkToCstmrStmt_Stmt_Bal_CdtDbtInd": "CRDT",
+                            "Document_BkToCstmrStmt_Stmt_Bal_Dt": {
+                                "Document_BkToCstmrStmt_Stmt_Bal_Dt_DtTm": "2023-10-01T23:59:00.000Z"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+  ```
+After Conversion
+  ```xml
+  <Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.10">
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>235549650</MsgId>
+      <CreDtTm>2023-10-05T14:43:51.979</CreDtTm>
+      <MsgRcpt>
+        <Nm>Test Client Ltd.</Nm>
+        <Id>
+          <OrgId>
+            <Othr>
+              <Id>test001</Id>
+            </Othr>
+          </OrgId>
+        </Id>
+      </MsgRcpt>
+      <AddtlInf>AddTInf</AddtlInf>
+    </GrpHdr>
+    <Stmt>
+      <Id>258158850</Id>
+      <ElctrncSeqNb>1</ElctrncSeqNb>
+      <LglSeqNb>1</LglSeqNb>
+      <CreDtTm>2023-10-05T14:43:52.098</CreDtTm>
+      <FrToDt>
+        <FrDtTm>2023-09-30T20:00:00.000</FrDtTm>
+        <ToDtTm>2023-10-01T19:59:59.000</ToDtTm>
+      </FrToDt>
+      <Acct>
+        <Tp>
+          <Prtry>IBDA_DDA</Prtry>
+        </Tp>
+        <Ccy>USD</Ccy>
+        <Nm>Sample Name 123</Nm>
+        <Svcr>
+          <FinInstnId>
+            <BICFI>GSCRUS30</BICFI>
+            <Nm>Goldman Sachs Bank</Nm>
+          </FinInstnId>
+        </Svcr>
+      </Acct>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>OPBD</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="USD">843686.20</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Dt>
+          <DtTm>2023-09-30T20:00:00.000</DtTm>
+        </Dt>
+      </Bal>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>CLAV</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="USD">334432401.27</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt>
+          <DtTm>2023-10-01T23:59:00.000Z</DtTm>
+        </Dt>
+      </Bal>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>
+  ```
